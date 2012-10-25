@@ -286,14 +286,11 @@ class FilterOperation(Operation):
 
     def perform(self, recordUndo=True):
         if recordUndo:
-            self.recordUndo()
+            self.undoSchematic = self.extractUndoSchematicFrom(self.level, self.box)
 
         self.filter.perform(self.level, BoundingBox(self.box), self.options)
 
         pass
-
-    def recordUndo(self):
-        self.undoSchematic = self.extractUndoSchematicFrom(self.level, self.box)
 
     def undo(self):
         if self.undoSchematic:
