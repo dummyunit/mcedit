@@ -89,16 +89,13 @@ class BlockCopyOperation(Operation):
     def name(self):
         return "Copy {0} blocks".format(self.sourceBox.volume)
 
-    def recordUndo(self):
-        self.undoSchematic = self.extractUndoSchematicFrom(self.destLevel, BoundingBox(self.destPoint, self.sourceBox.size))
-
     def perform(self, recordUndo=True):
         dirtyBox = self.dirtyBox()
         sourceBox = self.sourceBox
         destBox = BoundingBox(self.destPoint, sourceBox.size)
 
         if recordUndo:
-            self.recordUndo()
+            self.undoSchematic = self.extractUndoSchematicFrom(self.destLevel, BoundingBox(self.destPoint, self.sourceBox.size))
 
         blocksToCopy = None
         if not (self.copyAir and self.copyWater):
@@ -189,14 +186,12 @@ class CloneOperation (Operation):
         return self._dirtyBox
 
     def perform(self, recordUndo=True):
-        if recordUndo:
-            [i.recordUndo() for i in self.blockCopyOps]
-        [i.perform(False) for i in self.blockCopyOps]
+        [i.perform(recordUndo) for i in self.blockCopyOps]
         [i.perform(recordUndo) for i in self.selectionOps]
 
     def undo(self):
-        [i.undo() for i in self.blockCopyOps]
-        [i.undo() for i in self.selectionOps]
+        [i.undo() for i in reversed(self.selectionOps)]
+        [i.undo() for i in reversed(self.blockCopyOps)]
 
 
 class CloneToolPanel(Panel):
