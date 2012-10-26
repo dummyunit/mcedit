@@ -28,12 +28,13 @@ class PlayerMoveOperation(Operation):
     def perform(self, recordUndo=True):
         try:
             level = self.tool.editor.level
-            try:
-                self.undoPos = level.getPlayerPosition(self.player)
-                self.undoDim = level.getPlayerDimension(self.player)
-                self.undoYP = level.getPlayerOrientation(self.player)
-            except Exception, e:
-                info("Couldn't get player position! ({0!r})".format(e))
+            if recordUndo:
+                try:
+                    self.undoPos = level.getPlayerPosition(self.player)
+                    self.undoDim = level.getPlayerDimension(self.player)
+                    self.undoYP = level.getPlayerOrientation(self.player)
+                except Exception, e:
+                    info("Couldn't get player position! ({0!r})".format(e))
 
             yaw, pitch = self.yp
             if yaw is not None and pitch is not None:
@@ -88,7 +89,8 @@ class PlayerSpawnMoveOperation(Operation):
                 if SpawnSettings.spawnProtection.get():
                     raise SpawnPositionInvalid("You cannot have two air blocks at Y=63 and Y=64 in your spawn point's column. Additionally, you cannot have a solid block in the three blocks above your spawn point. It's weird, I know.")
 
-        self.undoPos = level.playerSpawnPosition()
+        if recordUndo:
+            self.undoPos = level.playerSpawnPosition()
         level.setPlayerSpawnPosition(self.pos)
         self.tool.markerList.invalidate()
 
@@ -164,8 +166,9 @@ class PlayerPositionTool(EditorTool):
 
         op = PlayerMoveOperation(self, pos, player, (y, p))
         self.movingPlayer = None
-        op.perform()
-        self.editor.addOperation(op)
+        op.perform(self.editor.allowUndo)
+        if self.editor.allowUndo:
+            self.editor.addOperation(op)
         self.editor.addUnsavedEdit()
 
     def gotoPlayerCamera(self):
@@ -358,8 +361,9 @@ class PlayerPositionTool(EditorTool):
 
         op = PlayerMoveOperation(self, pos, self.movingPlayer)
         self.movingPlayer = None
-        op.perform()
-        self.editor.addOperation(op)
+        op.perform(self.editor.allowUndo)
+        if self.editor.allowUndo:
+            self.editor.addOperation(op)
         self.editor.addUnsavedEdit()
 
     def levelChanged(self):
@@ -477,9 +481,9 @@ class PlayerSpawnPositionTool(PlayerPositionTool):
         pos = map(lambda p, d: p + d, pos, direction)
         op = PlayerSpawnMoveOperation(self, pos)
         try:
-            op.perform()
-
-            self.editor.addOperation(op)
+            op.perform(self.editor.allowUndo)
+            if self.editor.allowUndo:
+                self.editor.addOperation(op)
             self.editor.addUnsavedEdit()
             self.markerList.invalidate()
 
@@ -510,12 +514,13 @@ class PlayerSpawnPositionTool(PlayerPositionTool):
                 self.editor.invalidateChunks([(pos[0] // 16, pos[2] // 16)])
                 op = PlayerSpawnMoveOperation(self, pos)
                 try:
-                    op.perform()
+                    op.perform(self.editor.allowUndo)
                 except SpawnPositionInvalid, e:
                     alert(str(e))
                     return
 
-                self.editor.addOperation(op)
+                if self.editor.allowUndo:
+                    self.editor.addOperation(op)
                 self.editor.addUnsavedEdit()
                 self.markerList.invalidate()
                 if len(status):

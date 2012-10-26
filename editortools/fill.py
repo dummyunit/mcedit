@@ -239,10 +239,10 @@ class FillTool(EditorTool):
                 blocksToReplace = []
                 op = BlockFillOperation(self.editor, self.editor.level, self.selectionBox(), self.blockInfo, blocksToReplace)
 
-            self.performWithRetry(op)
+            self.performWithRetry(op, self.editor.allowUndo)
 
-        self.editor.addOperation(op)
-
+        if self.editor.allowUndo:
+            self.editor.addOperation(op)
         self.editor.addUnsavedEdit()
         self.editor.invalidateBox(box)
         self.editor.toolbar.selectTool(-1)

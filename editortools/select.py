@@ -390,8 +390,9 @@ class SelectionTool(EditorTool):
             dir = map(operator.mul, dir, (16, 16, 16))
         op = NudgeBlocksOperation(self.editor, self.selectionBox(), dir)
 
-        self.performWithRetry(op)
-        self.editor.addOperation(op)
+        self.performWithRetry(op, self.editor.allowUndo)
+        if self.editor.allowUndo:
+            self.editor.addOperation(op)
         self.editor.addUnsavedEdit()
 
     def nudgeSelection(self, dir):
@@ -406,8 +407,9 @@ class SelectionTool(EditorTool):
             return
 
         op = NudgeSelectionOperation(self, dir)
-        self.performWithRetry(op)
-        # self.editor.addOperation(op)
+        self.performWithRetry(op, self.editor.allowUndo)
+        # if self.editor.allowUndo:
+        #    self.editor.addOperation(op)
 
     def nudgePoint(self, p, n):
         if self.selectionBox() is None:
@@ -598,8 +600,9 @@ class SelectionTool(EditorTool):
                 o, m = self.selectionPointsFromDragResize()
 
                 op = SelectionOperation(self, (o, m))
-                self.performWithRetry(op)
-                self.editor.addOperation(op)
+                self.performWithRetry(op, self.editor.allowUndo)
+                if self.editor.allowUndo:
+                    self.editor.addOperation(op)
 
             self.dragResizeFace = None
             return
@@ -612,8 +615,9 @@ class SelectionTool(EditorTool):
 
         if self.dragStartPoint != pos or self.clickSelectionInProgress:
             op = SelectionOperation(self, (self.dragStartPoint, pos))
-            self.performWithRetry(op)
-            self.editor.addOperation(op)
+            self.performWithRetry(op, self.editor.allowUndo)
+            if self.editor.allowUndo:
+                self.editor.addOperation(op)
             self.selectionInProgress = False
             self.currentCorner = 1
             self.clickSelectionInProgress = False
@@ -629,8 +633,9 @@ class SelectionTool(EditorTool):
                 self.clickSelectionInProgress = True
             else:
                 op = SelectionOperation(self, points)
-                self.performWithRetry(op)
-                self.editor.addOperation(op)
+                self.performWithRetry(op, self.editor.allowUndo)
+                if self.editor.allowUndo:
+                    self.editor.addOperation(op)
 
                 self.selectOtherCorner()
                 self.selectionInProgress = False
@@ -935,13 +940,15 @@ class SelectionTool(EditorTool):
     def selectAll(self):
         box = self.editor.level.bounds
         op = SelectionOperation(self, self.selectionPointsFromBox(box))
-        self.performWithRetry(op)
-        self.editor.addOperation(op)
+        self.performWithRetry(op, self.editor.allowUndo)
+        if self.editor.allowUndo:
+            self.editor.addOperation(op)
 
     def deselect(self):
         op = SelectionOperation(self, None)
-        self.performWithRetry(op)
-        self.editor.addOperation(op)
+        self.performWithRetry(op, self.editor.allowUndo)
+        if self.editor.allowUndo:
+            self.editor.addOperation(op)
 
     def setSelectionPoint(self, pointNumber, newPoint):
         points = self.getSelectionPoints()
@@ -980,9 +987,9 @@ class SelectionTool(EditorTool):
             if resp == "Delete Chunks":
                 self.editor.toolbar.tools[8].destroyChunks(box.chunkPositions)
             elif resp == "Fill with Air":
-                self._deleteBlocks()
+                self._deleteBlocks(self.editor.allowUndo)
         else:
-            self._deleteBlocks()
+            self._deleteBlocks(self.editor.allowUndo)
 
     def _deleteBlocks(self, recordUndo=True):
         box = self.selectionBox()
@@ -992,13 +999,16 @@ class SelectionTool(EditorTool):
         with setWindowCaption("DELETING - "):
             self.editor.freezeStatus("Deleting {0} blocks".format(box.volume))
             self.performWithRetry(op, recordUndo)
-
-            self.editor.addOperation(op)
-            self.editor.invalidateBox(box)
+            if recordUndo:
+                self.editor.addOperation(op)
             self.editor.addUnsavedEdit()
+            self.editor.invalidateBox(box)
 
     @alertException
-    def deleteEntities(self, recordUndo=True):
+    def deleteEntities(self):
+        self._deleteEntities(self.editor.allowUndo)
+
+    def _deleteEntities(self, recordUndo=True):
         box = self.selectionBox()
 
         with setWindowCaption("WORKING - "):
@@ -1007,15 +1017,19 @@ class SelectionTool(EditorTool):
             editor = self.editor
 
             class DeleteEntitiesOperation(Operation):
+                undoEntities = None
+
                 def perform(self, recordUndo=True):
-                    self.undoEntities = level.getEntitiesInBox(box)
+                    if recordUndo:
+                        self.undoEntities = level.getEntitiesInBox(box)
                     level.removeEntitiesInBox(box)
                     editor.renderer.invalidateEntitiesInBox(box)
 
                 def undo(self):
-                    level.removeEntitiesInBox(box)
-                    level.addEntities(self.undoEntities)
-                    editor.renderer.invalidateEntitiesInBox(box)
+                    if not (self.undoEntities is None):
+                        level.removeEntitiesInBox(box)
+                        level.addEntities(self.undoEntities)
+                        editor.renderer.invalidateEntitiesInBox(box)
 
             op = DeleteEntitiesOperation()
             self.performWithRetry(op, recordUndo)
@@ -1032,7 +1046,7 @@ class SelectionTool(EditorTool):
     def cutSelection(self):
         self.copySelection()
         self.deleteBlocks()
-        self.deleteEntities(False)
+        self._deleteEntities(False)
 
     @alertException
     def copySelection(self):
@@ -1088,20 +1102,20 @@ class SelectionTool(EditorTool):
 
 class SelectionOperation(Operation):
     changedLevel = False
+    undoPoints = None
 
     def __init__(self, selectionTool, points):
         self.selectionTool = selectionTool
         self.points = points
 
     def perform(self, recordUndo=True):
-        self.undoPoints = self.selectionTool.getSelectionPoints()
+        if recordUndo:
+            self.undoPoints = self.selectionTool.getSelectionPoints()
         self.selectionTool.setSelectionPoints(self.points)
 
     def undo(self):
-        points = self.points
-        self.points = self.undoPoints
-        self.perform()
-        self.points = points
+        if not (self.undoPoints is None):
+            self.selectionTool.setSelectionPoints(self.undoPoints)
 
 
 class NudgeSelectionOperation (Operation):

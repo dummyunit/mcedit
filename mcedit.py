@@ -483,6 +483,10 @@ class OptionsPanel(Dialog):
         goPortableButton.tooltipText = self.portableButtonTooltip()
         goPortableRow = albow.Row((albow.ValueDisplay(ref=albow.AttrRef(self, 'portableLabelText'), width=250, align='r'), goPortableButton))
 
+        allowUndoRow = mceutils.CheckBoxLabel("Allow undo",
+            ref=Settings.allowUndo.propertyRef(),
+            tooltipText="Save information necessary to undo operations.")
+
         reportRow = mceutils.CheckBoxLabel("Report Crashes",
             ref=Settings.reportCrashes.propertyRef(),
             tooltipText="Automatically report fatal errors to the author.")
@@ -507,6 +511,7 @@ class OptionsPanel(Dialog):
             ) + (
             ((sys.platform == "win32" and pygame.version.vernum == (1, 9, 1)) and (windowSizeRow,) or ())
             ) + (
+            allowUndoRow,
             reportRow,
             ) + (
             (sys.platform == "win32") and (setWindowPlacementRow,) or ()

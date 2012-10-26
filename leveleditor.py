@@ -79,6 +79,7 @@ Settings.fov = Settings("Field of View", 70.0)
 Settings.spaceHeight = Settings("Space Height", 64)
 Settings.blockBuffer = Settings("Block Buffer", 256 * 1048576)
 Settings.reportCrashes = Settings("report crashes", 1)
+Settings.allowUndo = Settings("Allow undo", True)
 
 Settings.doubleBuffer = Settings("Double Buffer", True)
 
@@ -940,8 +941,9 @@ class CameraViewport(GLViewport):
 
         if chestWidget.dirty:
             op = ChestEditOperation()
-            op.perform()
-            self.editor.addOperation(op)
+            op.perform(self.editor.allowUndo)
+            if self.editor.allowUndo:
+                self.editor.addOperation(op)
             self.editor.addUnsavedEdit()
 
     rightMouseDragStart = None
@@ -1812,6 +1814,8 @@ class LevelEditor(GLViewport):
         if len(self.copyStack) == 0:
             return None
         return self.copyStack[0]
+
+    allowUndo = Settings.allowUndo.configProperty()
 
     toolbar = None
 

@@ -913,12 +913,12 @@ class BrushTool(CloneTool):
         op = BrushOperation(self.editor,
             self.draggedPositions,
             self.getBrushOptions())
-        self.performWithRetry(op)
-
-        box = op.dirtyBox()
-        self.editor.addOperation(op)
+        self.performWithRetry(op, self.editor.allowUndo)
+        if self.editor.allowUndo:
+            self.editor.addOperation(op)
         self.editor.addUnsavedEdit()
 
+        box = op.dirtyBox()
         self.editor.invalidateBox(box)
         self.lastPosition = self.draggedPositions[-1]
 

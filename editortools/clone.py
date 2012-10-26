@@ -935,11 +935,11 @@ class CloneTool(EditorTool):
 
         with setWindowCaption("COPYING - "):
             self.editor.freezeStatus("Copying %0.1f million blocks" % (float(destVolume) / 1048576.,))
-            self.performWithRetry(op)
+            self.performWithRetry(op, self.editor.allowUndo)
 
+        if self.editor.allowUndo:
+            self.editor.addOperation(op)
         self.editor.addUnsavedEdit()
-
-        self.editor.addOperation(op)
 
         dirtyBox = op.dirtyBox()
         if dirtyBox:
