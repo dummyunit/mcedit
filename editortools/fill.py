@@ -40,6 +40,9 @@ class BlockFillOperation(Operation):
         fill = self.destLevel.fillBlocksIter(destBox, self.blockInfo, blocksToReplace=self.blocksToReplace)
         showProgress("Replacing blocks...", fill, cancel=True)
 
+    def reversible(self):
+        return self.undoSchematic is not None
+
     def undo(self):
         if self.undoSchematic:
             self.destLevel.removeEntitiesInBox(self.destBox)
@@ -241,8 +244,8 @@ class FillTool(EditorTool):
 
             self.performWithRetry(op)
 
-        self.editor.addOperation(op)
-
+        if op.reversible():
+            self.editor.addOperation(op)
         self.editor.addUnsavedEdit()
         self.editor.invalidateBox(box)
         self.editor.toolbar.selectTool(-1)

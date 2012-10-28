@@ -219,6 +219,9 @@ class NudgeBlocksOperation (Operation):
             self.editor.invalidateBox(dirtyBox)
 
             self.nudgeSelection.perform(recordUndo)
+    
+    def reversible():
+        return self.undoSchematic is not None
 
     def undo(self):
         if self.undoSchematic:
@@ -391,7 +394,8 @@ class SelectionTool(EditorTool):
         op = NudgeBlocksOperation(self.editor, self.selectionBox(), dir)
 
         self.performWithRetry(op)
-        self.editor.addOperation(op)
+        if op.reversible():
+            self.editor.addOperation(op)
         self.editor.addUnsavedEdit()
 
     def nudgeSelection(self, dir):
@@ -993,7 +997,8 @@ class SelectionTool(EditorTool):
             self.editor.freezeStatus("Deleting {0} blocks".format(box.volume))
             self.performWithRetry(op, recordUndo)
 
-            self.editor.addOperation(op)
+            if op.reversible():
+                self.editor.addOperation(op)
             self.editor.invalidateBox(box)
             self.editor.addUnsavedEdit()
 

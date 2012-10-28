@@ -494,6 +494,9 @@ class BrushOperation(Operation):
     def dirtyBox(self):
         return self._dirtyBox
 
+    def reversible(self):
+        return self.undoSchematic is not None
+
     def undo(self):
         if self.undoSchematic:
             self.level.removeEntitiesInBox(self._dirtyBox)
@@ -915,10 +918,11 @@ class BrushTool(CloneTool):
             self.getBrushOptions())
         self.performWithRetry(op)
 
-        box = op.dirtyBox()
-        self.editor.addOperation(op)
+        if op.reversible():
+            self.editor.addOperation(op)
         self.editor.addUnsavedEdit()
 
+        box = op.dirtyBox()
         self.editor.invalidateBox(box)
         self.lastPosition = self.draggedPositions[-1]
 

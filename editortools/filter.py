@@ -292,6 +292,9 @@ class FilterOperation(Operation):
 
         pass
 
+    def reversible(self):
+        return self.undoSchematic is not None
+
     def undo(self):
         if self.undoSchematic:
             self.level.removeEntitiesInBox(self.box)
@@ -372,7 +375,8 @@ class FilterTool(EditorTool):
             self.editor.level.showProgress = showProgress
             self.performWithRetry(op)
 
-            self.editor.addOperation(op)
+            if op.reversible():
+                self.editor.addOperation(op)
             self.editor.addUnsavedEdit()
 
             self.editor.invalidateBox(self.selectionBox())

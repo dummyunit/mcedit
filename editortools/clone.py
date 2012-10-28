@@ -111,6 +111,9 @@ class BlockCopyOperation(Operation):
             i = self.destLevel.copyBlocksFromIter(self.sourceLevel, self.sourceBox, self.destPoint, blocksToCopy, create=True)
             showProgress("Copying {0:n} blocks...".format(self.sourceBox.volume), i)
 
+    def reversible(self):
+        return self.undoSchematic is not None
+
     def undo(self):
         if self.undoSchematic:
             self.destLevel.removeEntitiesInBox(BoundingBox(self.destPoint, self.sourceBox.size))
@@ -186,8 +189,13 @@ class CloneOperation (Operation):
         return self._dirtyBox
 
     def perform(self, recordUndo=True):
-        [i.perform(recordUndo) for i in self.blockCopyOps]
+        for i in self.blockCopyOps:
+            i.perform(recordUndo)
+            recordUndo = recordUndo and i.reversible()
         [i.perform(recordUndo) for i in self.selectionOps]
+
+    def reversible(self):
+        return all([i.reversible() for i in self.blockCopyOps])
 
     def undo(self):
         [i.undo() for i in reversed(self.selectionOps)]
@@ -937,9 +945,9 @@ class CloneTool(EditorTool):
             self.editor.freezeStatus("Copying %0.1f million blocks" % (float(destVolume) / 1048576.,))
             self.performWithRetry(op)
 
+        if op.reversible():
+            self.editor.addOperation(op)
         self.editor.addUnsavedEdit()
-
-        self.editor.addOperation(op)
 
         dirtyBox = op.dirtyBox()
         if dirtyBox:
