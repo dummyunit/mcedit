@@ -3369,6 +3369,9 @@ class LevelEditor(GLViewport):
     def addOperation(self, op):
         self.undoStack.append(op)
 
+    def dropUndoHistory(self):
+        self.undoStack = []
+
     def quit(self):
         self.hideControls()
         self.mouseLookOff()

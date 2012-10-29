@@ -947,6 +947,8 @@ class CloneTool(EditorTool):
 
         if op.reversible():
             self.editor.addOperation(op)
+        else:
+            self.editor.dropUndoHistory()
         self.editor.addUnsavedEdit()
 
         dirtyBox = op.dirtyBox()

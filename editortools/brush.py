@@ -920,6 +920,8 @@ class BrushTool(CloneTool):
 
         if op.reversible():
             self.editor.addOperation(op)
+        else:
+            self.editor.dropUndoHistory()
         self.editor.addUnsavedEdit()
 
         box = op.dirtyBox()

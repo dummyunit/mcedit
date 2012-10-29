@@ -104,7 +104,7 @@ class Operation(object):
             sch = level.extractAnySchematic(box)
 
         if sch == "Canceled":
-            if ask("Continue operation without recording undo?", ["Yes", "No"]) == "Yes":
+            if ask("Continue operation without recording undo and drop existing undo history?", ["Yes", "No"]) == "Yes":
                 return None
             else:
                 raise Cancel

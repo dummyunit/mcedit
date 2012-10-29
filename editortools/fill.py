@@ -246,6 +246,8 @@ class FillTool(EditorTool):
 
         if op.reversible():
             self.editor.addOperation(op)
+        else:
+            self.editor.dropUndoHistory()
         self.editor.addUnsavedEdit()
         self.editor.invalidateBox(box)
         self.editor.toolbar.selectTool(-1)

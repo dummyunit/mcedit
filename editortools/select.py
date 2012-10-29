@@ -396,6 +396,8 @@ class SelectionTool(EditorTool):
         self.performWithRetry(op)
         if op.reversible():
             self.editor.addOperation(op)
+        else:
+            self.editor.dropUndoHistory()
         self.editor.addUnsavedEdit()
 
     def nudgeSelection(self, dir):
@@ -999,6 +1001,8 @@ class SelectionTool(EditorTool):
 
             if op.reversible():
                 self.editor.addOperation(op)
+            else:
+                self.editor.dropUndoHistory()
             self.editor.invalidateBox(box)
             self.editor.addUnsavedEdit()
 
